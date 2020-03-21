@@ -195,7 +195,7 @@ winform.listbox.wndproc = function(hwnd,message,wParam,lParam){
 						function(winform,lexPath){
 							import wubi.lexFile; 
 							var wubiLex = wubi.lexFile(lexPath); 
-							winform.editLex.text = wubiLex.tostring(); 
+							winform.editLex.text = wubiLex.tostring(false,false,true); 
 							winform.editLex.modified = false;
 							
 							statistics = wubiLex.statistics();
@@ -495,9 +495,10 @@ winform.ddSimplized.oncommand = function(id,event){
 			wubiLex.addText(winform.editLex.text);
 					
 			import string.conv;	
+			var simplized = string.conv.simplized;
 			wubiLex.filter(
 				function(txt,code){
-					return ..string.conv.simplized(txt)===txt;
+					return simplized(txt)===txt;
 				}
 			)
 				
@@ -549,10 +550,10 @@ winform.ddGb2312.oncommand = function(id,event){
 			wubiLex.addText(winform.editLex.text);
 					
 			import string.conv;	
+			var isGb2312 = string.conv.isGb2312;
 			wubiLex.filter(
-				function(txt,code){
-					txt = string.fromto(txt,65001,936);
-					return (txt[1]>=0xB0 && txt[1]<=0xF7 && txt[2]>=0xA1 && txt[2]<=0xFE);
+				function(txt,code){ 
+					return isGb2312(txt);
 				}
 			)
 			
@@ -592,6 +593,24 @@ winform.ddSimplified.oncommand = function(id,event){
 }
 
 var createMenuItems = function(){
+    
+    var wubiTextTableConvert = function(reverse,singleLine,sortWeight){
+    	thread.invoke( 
+			function(winform,reverse,singleLine,sortWeight){
+				winform.editLex.busy(true,"正在转换格式 ……");
+				
+				import wubi.lexFile;
+				var wubiLex = wubi.lexFile("");
+				wubiLex.addText(winform.editLex.text);
+				winform.editLex.text = wubiLex.tostring(reverse,singleLine,sortWeight);
+				
+				var statistics = wubiLex.statistics(); 
+				winform.editLex.busy(false
+					,string.format("总编码数：%d 重码数：%d",statistics.totalTxt,statistics.coincidentTxt ) )
+			},winform,reverse,singleLine,sortWeight
+		)
+    }
+    
 		
 	return {
 		{ /*---分隔线---*/ };
@@ -661,92 +680,34 @@ var createMenuItems = function(){
 		{ "转换格式";{ 
 			{ "编码在前 / 词组在后";
 				function(id){  
-					thread.invoke( 
-						function(winform){
-							winform.editLex.busy(true,"正在转换格式为:码前词后");
-							
-							import wubi.lexFile;
-							var wubiLex = wubi.lexFile("");
-							wubiLex.addText(winform.editLex.text);
-							winform.editLex.text = wubiLex.tostring(false);
-							
-							var statistics = wubiLex.statistics(); 
-							winform.editLex.busy(false
-								,string.format("总编码数：%d 重码数：%d",statistics.totalTxt,statistics.coincidentTxt ) )
-						},winform
-					)	 
+					wubiTextTableConvert(false,false,false); 
 				}
 			}  
 			{ "编码在前 / 词组在后 / 一码一行";
 				function(id){  
-					thread.invoke( 
-						function(winform){
-							winform.editLex.busy(true,"正在转换格式为:码前词后/一码一行");
-							
-							import wubi.lexFile;
-							var wubiLex = wubi.lexFile("");
-							wubiLex.addText(winform.editLex.text);
-							winform.editLex.text = wubiLex.tostring(false,true);
-							
-							var statistics = wubiLex.statistics(); 
-							winform.editLex.busy(false
-								,string.format("总编码数：%d 重码数：%d",statistics.totalTxt,statistics.coincidentTxt ) );
-						},winform
-					)	 
+					wubiTextTableConvert(false,true,false); 
 				}
 			} 
+			
+			{ "编码在前 / 词组在后 / 升序权重";
+				function(id){  
+					wubiTextTableConvert(false,false,true); 
+				}
+			}; 
+			
 			{ "词组在前 / 编码在后";
 				function(id){  
-					thread.invoke( 
-						function(winform){
-							winform.editLex.busy(true,"正在转换格式为:词前码后");
-							
-							import wubi.lexFile;
-							var wubiLex = wubi.lexFile("");
-							wubiLex.addText(winform.editLex.text);
-							winform.editLex.text = wubiLex.tostring(true);
-							
-							var statistics = wubiLex.statistics(); 
-							winform.editLex.busy(false
-								,string.format("总编码数：%d 重码数：%d",statistics.totalTxt,statistics.coincidentTxt ) )
-						},winform
-					)	 
+					wubiTextTableConvert(true,false,false);  
 				}
 			};  
 			{ "词组在前 / 编码在后 / 一行多码";
 				function(id){
-					thread.invoke( 
-						function(winform){
-							winform.editLex.busy(true,"正在转换格式为:词前码后/一行多码");
-							
-							import wubi.lexFile;
-							var wubiLex = wubi.lexFile("");
-							wubiLex.addText(winform.editLex.text);
-							winform.editLex.text = wubiLex.tostring(true,true);
-							
-							var statistics = wubiLex.statistics(); 
-							winform.editLex.busy(false
-								,string.format("总编码数：%d 重码数：%d",statistics.totalTxt,statistics.coincidentTxt ) )
-						},winform
-					)	 
+					wubiTextTableConvert(true,true,false);   
 				}
 			};
-			{ "词组在前 / 编码在后 / 权重";
+			{ "词组在前 / 编码在后 / 降序权重";
 				function(id){  
-					thread.invoke( 
-						function(winform){
-							winform.editLex.busy(true,"正在转换格式为:词前码后");
-							
-							import wubi.lexFile;
-							var wubiLex = wubi.lexFile("");
-							wubiLex.addText(winform.editLex.text);
-							winform.editLex.text = wubiLex.tostring(true,false,true);
-							
-							var statistics = wubiLex.statistics(); 
-							winform.editLex.busy(false
-								,string.format("总编码数：%d 重码数：%d",statistics.totalTxt,statistics.coincidentTxt ) )
-						},winform
-					)	 
+					wubiTextTableConvert(true,false,true); 
 				}
 			}; 
 		}}
@@ -842,6 +803,42 @@ var createMenuItems = function(){
 		}}
 		
 		{ "词频调整";{ 
+			{ "加载并应用微软词频文件";
+				function(id){
+					io.open()
+					thread.invoke( 
+						function(winform){
+							winform.editLex.busy(true,"正在加载并应用微软词频文件");
+							
+							var weightFilePath = ..io.appData("/aardio/std/wubi/word-weight.txt");
+							if(!io.exist(weightFilePath)){
+								
+								import sevenZip.lzma.httpFile;
+								sevenZip.lzma.httpFile.saveFromUrl("http://wubi.aardio.com/download/word-weight.lzma"
+									,weightFilePath)
+									
+								if(!io.exist(weightFilePath)){
+									winform.editLex.busy(false,"加载微软词频文件时遇到网络错误")
+									winform.msgErr("加载微软词频文件时遇到网络错误")
+									return;
+								}
+							} 
+							
+							import wubi.lexFile;
+							var wubiLex = wubi.lexFile("");
+							wubiLex.addText(winform.editLex.text);
+							wubiLex.loadWordWeightFile(weightFilePath)
+							
+							winform.editLex.text = wubiLex.tostring();
+							
+							var statistics = wubiLex.statistics(); 
+							winform.editLex.busy(false
+								,string.format("总编码数：%d 重码数：%d",statistics.totalTxt,statistics.coincidentTxt ) )
+							
+						},winform
+					)
+				}
+			};
 			{ "单字优先";
 				function(id){
 					thread.invoke( 
@@ -868,6 +865,7 @@ var createMenuItems = function(){
 										}
 									}
 									
+									if(!(#chars && #texts)){ return null;}
 									reverse(chars);
 									return append(chars,texts) 
 								}
@@ -909,6 +907,7 @@ var createMenuItems = function(){
 										}
 									}
 									
+									if(!(#chars && #texts)){ return null;}
 									reverse(chars);
 									return append(chars,texts) 
 								}
